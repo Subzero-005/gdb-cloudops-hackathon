@@ -17,6 +17,7 @@ jobs:
     name: Build Java Services
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         service:
           - auth-service
