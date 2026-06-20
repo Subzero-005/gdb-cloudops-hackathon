@@ -1,0 +1,88 @@
+server:
+  port: ${PORT:8000}
+  shutdown: graceful
+
+spring:
+  application:
+    name: gateway-service
+  output:
+    ansi:
+      enabled: ALWAYS
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8004}
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - StripPrefix=0
+
+        - id: users-service
+          uri: ${USERS_SERVICE_URL:http://localhost:8003}
+          predicates:
+            - Path=/api/v1/users/**
+          filters:
+            - StripPrefix=0
+
+        - id: account-service
+          uri: ${ACCOUNT_SERVICE_URL:http://localhost:8001}
+          predicates:
+            - Path=/api/v1/accounts/**
+          filters:
+            - StripPrefix=0
+
+        - id: transactions-service
+          uri: ${TRANSACTIONS_SERVICE_URL:http://localhost:8002}
+          predicates:
+            - Path=/api/v1/transactions/**
+          filters:
+            - StripPrefix=0
+
+        - id: payment-gateway-service
+          uri: ${PAYMENT_SERVICE_URL:http://localhost:8008}
+          predicates:
+            - Path=/api/v1/payments/**
+          filters:
+            - StripPrefix=0
+
+        - id: company-service
+          uri: ${COMPANY_SERVICE_URL:http://localhost:8006}
+          predicates:
+            - Path=/api/v1/companies/**
+          filters:
+            - StripPrefix=0
+
+        - id: aadhar-service
+          uri: ${AADHAR_SERVICE_URL:http://localhost:8005}
+          predicates:
+            - Path=/api/v1/aadhar/**
+          filters:
+            - StripPrefix=0
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    root: INFO
+    com.gdb.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG

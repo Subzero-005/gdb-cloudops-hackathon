@@ -1,0 +1,29 @@
+server:
+  port: ${PORT:8761}
+  shutdown: graceful
+
+spring:
+  application:
+    name: eureka-server
+  output:
+    ansi:
+      enabled: ALWAYS
+
+eureka:
+  instance:
+    hostname: ${EUREKA_HOST:localhost}
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:${PORT:8761}/eureka/
+  server:
+    wait-time-in-ms-when-sync-empty: 0
+    enable-self-preservation: false
+
+logging:
+  level:
+    root: INFO
+    com.gdb.eureka: DEBUG
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN

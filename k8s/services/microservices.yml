@@ -1,0 +1,333 @@
+# Users Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-service
+  namespace: gdb
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: users-service
+  template:
+    metadata:
+      labels:
+        app: users-service
+    spec:
+      containers:
+        - name: users-service
+          image: gdb/users-service:latest
+          ports:
+            - containerPort: 8003
+          env:
+            - name: PORT
+              value: "8003"
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gdb-config
+                  key: USERS_DB_URL
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: gdb-secrets
+                  key: DB_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gdb-secrets
+                  key: DB_PASSWORD
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+  namespace: gdb
+spec:
+  selector:
+    app: users-service
+  ports:
+    - port: 8003
+      targetPort: 8003
+---
+# Account Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: account-service
+  namespace: gdb
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: account-service
+  template:
+    metadata:
+      labels:
+        app: account-service
+    spec:
+      containers:
+        - name: account-service
+          image: gdb/account-service:latest
+          ports:
+            - containerPort: 8001
+          env:
+            - name: PORT
+              value: "8001"
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gdb-config
+                  key: ACCOUNTS_DB_URL
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: gdb-secrets
+                  key: DB_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gdb-secrets
+                  key: DB_PASSWORD
+            - name: AADHAR_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gdb-config
+                  key: AADHAR_SERVICE_URL
+            - name: COMPANY_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gdb-config
+                  key: COMPANY_SERVICE_URL
+            - name: AUTH_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gdb-config
+                  key: AUTH_SERVICE_URL
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: account-service
+  namespace: gdb
+spec:
+  selector:
+    app: account-service
+  ports:
+    - port: 8001
+      targetPort: 8001
+---
+# Transactions Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transactions-service
+  namespace: gdb
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: transactions-service
+  template:
+    metadata:
+      labels:
+        app: transactions-service
+    spec:
+      containers:
+        - name: transactions-service
+          image: gdb/transactions-service:latest
+          ports:
+            - containerPort: 8002
+          env:
+            - name: PORT
+              value: "8002"
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gdb-config
+                  key: TRANSACTIONS_DB_URL
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: gdb-secrets
+                  key: DB_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gdb-secrets
+                  key: DB_PASSWORD
+            - name: ACCOUNT_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gdb-config
+                  key: ACCOUNT_SERVICE_URL
+            - name: PAYMENT_GATEWAY_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: gdb-config
+                  key: PAYMENT_SERVICE_URL
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transactions-service
+  namespace: gdb
+spec:
+  selector:
+    app: transactions-service
+  ports:
+    - port: 8002
+      targetPort: 8002
+---
+# Payment Gateway Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-gateway-service
+  namespace: gdb
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-gateway-service
+  template:
+    metadata:
+      labels:
+        app: payment-gateway-service
+    spec:
+      containers:
+        - name: payment-gateway-service
+          image: gdb/payment-gateway-service:latest
+          ports:
+            - containerPort: 8008
+          env:
+            - name: PORT
+              value: "8008"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-gateway-service
+  namespace: gdb
+spec:
+  selector:
+    app: payment-gateway-service
+  ports:
+    - port: 8008
+      targetPort: 8008
+---
+# Company Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: company-service
+  namespace: gdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: company-service
+  template:
+    metadata:
+      labels:
+        app: company-service
+    spec:
+      containers:
+        - name: company-service
+          image: gdb/company-service:latest
+          ports:
+            - containerPort: 8006
+          env:
+            - name: PORT
+              value: "8006"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: company-service
+  namespace: gdb
+spec:
+  selector:
+    app: company-service
+  ports:
+    - port: 8006
+      targetPort: 8006
+---
+# Aadhar Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aadhar-service
+  namespace: gdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aadhar-service
+  template:
+    metadata:
+      labels:
+        app: aadhar-service
+    spec:
+      containers:
+        - name: aadhar-service
+          image: gdb/aadhar-service:latest
+          ports:
+            - containerPort: 8005
+          env:
+            - name: PORT
+              value: "8005"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aadhar-service
+  namespace: gdb
+spec:
+  selector:
+    app: aadhar-service
+  ports:
+    - port: 8005
+      targetPort: 8005

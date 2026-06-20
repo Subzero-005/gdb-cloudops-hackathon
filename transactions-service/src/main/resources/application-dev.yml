@@ -1,0 +1,13 @@
+server:
+  port: 8002
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/gdb_transactions_db
+    username: postgres
+    password: Subzero_005
+
+logging:
+  level:
+    root: DEBUG
+    com.gdb.transactions: DEBUG
