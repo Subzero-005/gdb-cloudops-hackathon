@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gdb
+  labels:
+    app: global-digital-bank
+    environment: production

@@ -1,0 +1,240 @@
+services:
+
+  # ─── Databases ───────────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: gdb-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Subzero_005}
+      POSTGRES_DB: gdb_auth_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - gdb-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ─── Service Discovery ────────────────────────────────────────────────────────
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    image: gdb/eureka-server:latest
+    container_name: gdb-eureka-server
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    networks:
+      - gdb-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health || wget -qO- http://localhost:8761/ || exit 0"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ─── API Gateway ──────────────────────────────────────────────────────────────
+
+  gateway-service:
+    build:
+      context: ./gateway-service
+      dockerfile: Dockerfile
+    image: gdb/gateway-service:latest
+    container_name: gdb-gateway-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      EUREKA_URL: http://eureka-server:8761/eureka/
+      AUTH_SERVICE_URL: http://auth-service:8004
+      USERS_SERVICE_URL: http://users-service:8003
+      ACCOUNT_SERVICE_URL: http://account-service:8001
+      TRANSACTIONS_SERVICE_URL: http://transactions-service:8002
+      PAYMENT_SERVICE_URL: http://payment-gateway-service:8008
+      COMPANY_SERVICE_URL: http://company-service:8006
+      AADHAR_SERVICE_URL: http://aadhar-service:8005
+    networks:
+      - gdb-network
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  # ─── Business Services ────────────────────────────────────────────────────────
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    image: gdb/auth-service:latest
+    container_name: gdb-auth-service
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      PORT: 8004
+      DATABASE_URL: jdbc:postgresql://postgres:5432/gdb_auth_db
+      DATABASE_USER: ${DB_USER:-postgres}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-Subzero_005}
+      USERS_SERVICE_URL: http://users-service:8003
+      JWT_SECRET_KEY: ${JWT_SECRET:-9a4f2c8d3b7a1E9f4g2h6j1k5m9n8p3q7r6s0t4u1v2w7x3y8z9A0B1C2D3E4F5G}
+    networks:
+      - gdb-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  users-service:
+    build:
+      context: ./users-service
+      dockerfile: Dockerfile
+    image: gdb/users-service:latest
+    container_name: gdb-users-service
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      PORT: 8003
+      DATABASE_URL: jdbc:postgresql://postgres:5432/gdb_users_db
+      DATABASE_USER: ${DB_USER:-postgres}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-Subzero_005}
+    networks:
+      - gdb-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  account-service:
+    build:
+      context: ./account-service
+      dockerfile: Dockerfile
+    image: gdb/account-service:latest
+    container_name: gdb-account-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      PORT: 8001
+      DATABASE_URL: jdbc:postgresql://postgres:5432/gdb_accounts_db
+      DATABASE_USER: ${DB_USER:-postgres}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-Subzero_005}
+      AADHAR_SERVICE_URL: http://aadhar-service:8005
+      COMPANY_SERVICE_URL: http://company-service:8006
+      AUTH_SERVICE_URL: http://auth-service:8004
+      NOTIFICATION_SERVICE_URL: http://localhost:8007
+    networks:
+      - gdb-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  transactions-service:
+    build:
+      context: ./transactions-service
+      dockerfile: Dockerfile
+    image: gdb/transactions-service:latest
+    container_name: gdb-transactions-service
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      PORT: 8002
+      DATABASE_URL: jdbc:postgresql://postgres:5432/gdb_transactions_db
+      DATABASE_USER: ${DB_USER:-postgres}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-Subzero_005}
+      ACCOUNT_SERVICE_URL: http://account-service:8001
+      PAYMENT_GATEWAY_SERVICE_URL: http://payment-gateway-service:8008
+    networks:
+      - gdb-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payment-gateway-service:
+    build:
+      context: ./payment-gateway-service
+      dockerfile: Dockerfile
+    image: gdb/payment-gateway-service:latest
+    container_name: gdb-payment-gateway-service
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    environment:
+      PORT: 8008
+      DATABASE_USER: ${DB_USER:-postgres}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-Subzero_005}
+    networks:
+      - gdb-network
+
+  company-service:
+    build:
+      context: ./company-service
+      dockerfile: Dockerfile
+    image: gdb/company-service:latest
+    container_name: gdb-company-service
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      PORT: 8006
+    networks:
+      - gdb-network
+
+  aadhar-service:
+    build:
+      context: ./aadhar-service
+      dockerfile: Dockerfile
+    image: gdb/aadhar-service:latest
+    container_name: gdb-aadhar-service
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      PORT: 8005
+    networks:
+      - gdb-network
+
+  # ─── Frontend ─────────────────────────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_AUTH_SERVICE_URL: http://localhost:8004
+        VITE_USERS_SERVICE_URL: http://localhost:8003
+        VITE_ACCOUNTS_SERVICE_URL: http://localhost:8001
+        VITE_TRANSACTIONS_SERVICE_URL: http://localhost:8002
+        VITE_AADHAR_SERVICE_URL: http://localhost:8005
+        VITE_COMPANY_CRV_SERVICE_URL: http://localhost:8006
+        VITE_NOTIFICATION_SERVICE_URL: http://localhost:8007
+        VITE_PAYMENT_GATEWAY_URL: http://localhost:8008
+    image: gdb/frontend:latest
+    container_name: gdb-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - gdb-network
+    depends_on:
+      - gateway-service
+
+networks:
+  gdb-network:
+    driver: bridge
+    name: gdb-network
+
+volumes:
+  postgres-data:
+    name: gdb-postgres-data
