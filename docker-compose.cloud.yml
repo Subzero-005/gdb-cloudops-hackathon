@@ -93,6 +93,7 @@ services:
       DATABASE_USER: ${DB_USER:-postgres}
       DATABASE_PASSWORD: ${DB_PASSWORD:-Subzero_005}
       EUREKA_URL: http://eureka-server:8761/eureka/
+      APP_SERVICES_USERS_URL: http://users-service:8003
       JAVA_OPTS: "-Xms64m -Xmx192m -XX:+UseSerialGC"
     networks:
       - gdb-network
@@ -120,7 +121,7 @@ services:
       DATABASE_USER: ${DB_USER:-postgres}
       DATABASE_PASSWORD: ${DB_PASSWORD:-Subzero_005}
       EUREKA_URL: http://eureka-server:8761/eureka/
-      AUTH_SERVICE_URL: http://auth-service:8004
+      APP_SERVICES_AUTH_URL: http://auth-service:8004
       JAVA_OPTS: "-Xms64m -Xmx192m -XX:+UseSerialGC"
     networks:
       - gdb-network
