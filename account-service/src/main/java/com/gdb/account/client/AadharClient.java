@@ -1,20 +1,18 @@
 package com.gdb.account.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
-/**
- * Client for communicating with the Aadhar Verification Service (port 8005).
- * Called during savings account creation to validate the Aadhar number.
- */
 @Component
 @Slf4j
 public class AadharClient {
@@ -28,9 +26,6 @@ public class AadharClient {
         this.aadharServiceUrl = aadharServiceUrl;
     }
 
-    /**
-     * Response DTO for the Aadhar verification API.
-     */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -46,12 +41,7 @@ public class AadharClient {
         private String timestamp;
     }
 
-    /**
-     * Verifies an Aadhar number by calling the external Aadhar Service.
-     *
-     * @param aadharNumber the 12-digit Aadhar number to verify
-     * @return true if the Aadhar number is valid, false otherwise
-     */
+    @Retry(name = "aadharService", fallbackMethod = "verifyAadharFallback")
     public boolean verifyAadhar(String aadharNumber) {
         String url = aadharServiceUrl + "/api/v1/verify";
         log.info("Calling Aadhar Service at {} for verification", url);
@@ -70,25 +60,20 @@ public class AadharClient {
             log.warn("Aadhar Service returned null response");
             return false;
 
+        } catch (HttpClientErrorException e) {
+            log.warn("Aadhar Service returned client error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("Aadhar validation failed: " + e.getResponseBodyAsString());
         } catch (Exception e) {
-            // TODO: MOD11-CR-01: Resilience4j Retry & Fallback.
-            // Trainee task: Introduce a retry configuration on this client call.
-            // Add Resilience4j dependency to pom.xml and use @Retry with a fallback method.
-            // 
-            // TODO: MOD11-BUG-01: Swallowed client validation error.
-            // Trainee task: When the Aadhar service rejects an Aadhar number due to formatting errors,
-            // it throws a 400 Bad Request exception, which hits this generic catch block and shows
-            // "Aadhar verification service is unavailable".
-            // Add a specific catch block for HttpClientErrorException to parse the response body 
-            // and throw the specific validation error message instead of the generic outage message.
             log.error("Error calling Aadhar Service: {}", e.getMessage());
             throw new RuntimeException("Aadhar verification service is unavailable. Please try again later.");
         }
     }
 
-    /**
-     * Masks an Aadhar number for logging (showing only first 4 digits).
-     */
+    public boolean verifyAadharFallback(String aadharNumber, Exception e) {
+        log.error("Aadhar Service unavailable after retries for {}: {}", maskAadhar(aadharNumber), e.getMessage());
+        throw new RuntimeException("Aadhar verification service is unavailable. Please try again later.");
+    }
+
     private String maskAadhar(String aadharNumber) {
         if (aadharNumber == null || aadharNumber.length() < 4) {
             return "XXXXXXXXXXXX";

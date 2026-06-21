@@ -43,7 +43,7 @@ external:
     # Trainee task: During local execution, creating a Savings Account fails because the
     # Aadhar verification service is unreachable. Identify the incorrect port in this fallback URL and fix it.
     # Injected Bug: Pointing to port 8008 instead of 8005.
-    url: ${AADHAR_SERVICE_URL:http://localhost:8008}
+    url: ${AADHAR_SERVICE_URL:http://localhost:8005}
   company-service:
     url: ${COMPANY_SERVICE_URL:http://localhost:8006}
   notification-service:
@@ -55,7 +55,7 @@ external:
     # TODO: MOD12-BUG-01: Load-balanced lookup name mismatch.
     # Trainee task: Under service discovery mode, calls to auth-service fail with service resolution errors.
     # Injected Bug: The lookup URL references "http://AUTH-SERVICES" (plural) instead of "http://auth-service" (singular).
-    url: ${AUTH_SERVICE_URL:http://AUTH-SERVICES}
+    url: ${AUTH_SERVICE_URL:http://auth-service}
 
 # Swagger/OpenAPI Configuration
 springdoc:

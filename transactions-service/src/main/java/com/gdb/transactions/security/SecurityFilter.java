@@ -44,10 +44,11 @@ public class SecurityFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7);
             AuthClient.TokenValidationResponse validationResponse = authClient.validateToken(token);
             
-            // TODO: MOD8-CR-01: Token revocation validation blacklist check.
-            // Trainee task: Implement a check inside this validation block.
-            // Call the auth service via a new endpoint (e.g., AuthClient.isTokenRevoked(token) or validationResponse.isRevoked())
-            // and if the token is revoked, deny authorization (HttpServletResponse.SC_UNAUTHORIZED).
+            if (authClient.isTokenRevoked(token)) {
+                log.warn("Revoked token used for path: {}", path);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token has been revoked");
+                return;
+            }
 
             if (validationResponse.isValid()) {
                 UserContext context = UserContext.builder()

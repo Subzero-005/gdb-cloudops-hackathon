@@ -22,7 +22,7 @@ public class SecurityUtils {
 
         String role = context.getRole();
         // Injected Bug: Using OR (||) instead of AND (&&) in negative checks
-        if (!UserConstants.ROLE_ADMIN.equals(role) || !UserConstants.ROLE_TELLER.equals(role)) {
+        if (!UserConstants.ROLE_ADMIN.equals(role) && !UserConstants.ROLE_TELLER.equals(role)) {
             throw new RuntimeException("ACCESS_DENIED");
         }
     }

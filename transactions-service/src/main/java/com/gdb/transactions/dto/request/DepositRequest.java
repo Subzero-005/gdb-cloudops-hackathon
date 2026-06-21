@@ -28,6 +28,7 @@ public class DepositRequest {
     // exceeding $50,000.00 without additional tax/compliance identification.
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "1.00", message = "Amount must be at least 1.00")
+    @DecimalMax(value = "50000.00", message = "Deposits cannot exceed 50,000.00")
     @Digits(integer = 10, fraction = 2, message = "Amount must have at most 10 integer digits and 2 decimal places")
     private BigDecimal amount;
 
